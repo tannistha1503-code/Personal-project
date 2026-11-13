@@ -1,0 +1,5 @@
+Test case What the test proves
+1 – Random read Verifies SSG's random read performance, latency and IOPS scalability across different queue depths and job counts.
+2 – Random write Verifies SSG's random write throughput, latency and ability to prevent write starvation at different queue depths.
+3 – Sequential read/write Verifies that SSG preserves UFS sequential read/write bandwidth and performance across different block sizes and queue depths.
+4 – Mixed read/write (70:30) Verifies SSG's ability to balance read prioritisation and write fairness while maintaining overall IOPS under mixed workloads.
