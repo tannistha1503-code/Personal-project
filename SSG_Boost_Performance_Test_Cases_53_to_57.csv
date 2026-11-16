@@ -1,0 +1,76 @@
+﻿Sl.No,Viewpoint,Precondition,Test scenario,Implementation steps,Suggested configuration,Metrics,Expected result,Feasibility Status,Feasibility explanation / dependencies,Does this test check the SSG scheduler?,What this test proves,Test type,Priority,Remark
+53,SSG Boost Performance,"1) BASE device configuration
+2) SSG scheduler enabled
+3) Boost control available at /dev/blkio/background/blkio.ssg.boost_on
+4) Same test file and workload used for both runs","1) Run foreground random read, 4K, QD1 with boost OFF
+2) Repeat with boost ON
+3) Run foreground random write, 4K, QD1 with boost OFF and ON
+4) Repeat each test at least 5 times","1) Set boost to 0 and verify state
+2) Run fio and collect performance
+3) Set boost to 1 and verify state
+4) Add test PID to appropriate boost cgroup, as required
+5) Repeat identical fio workload
+6) Compare results","Random read/write, 4K block size, QD1, fixed test size and runtime. Keep fio parameters identical in both conditions","IOPS, bandwidth, average latency, p95 latency, p99 latency, CPU utilisation","1) Boost ON should improve foreground I/O performance compared with OFF
+2) Latency should reduce, particularly at p95/p99
+3) Results should be repeatable across runs",Feasible,"Requires a working boost control, correct cgroup assignment and a repeatable fio workload",Yes — checks whether enabling SSG boost changes foreground I/O scheduling behaviour,Whether boost provides a measurable performance benefit instead of merely changing its control state,UFS under test,P1,"Use the same workload, device condition and thermal state for ON/OFF comparisons"
+54,SSG Boost Performance,"1) BASE configuration
+2) SSG scheduler enabled
+3) Foreground and background cgroups available
+4) Boost control working","1) Run background sequential write, 1M, QD32
+2) Simultaneously run foreground random read, 4K, QD1
+3) Repeat with boost OFF and ON
+4) Repeat with foreground random write, 4K, QD1","1) Start background fio workload
+2) Start foreground fio workload
+3) Record foreground and background performance with boost OFF
+4) Enable boost and assign foreground PID to appropriate cgroup
+5) Repeat same workload
+6) Compare foreground latency and background bandwidth","FG: random read/write, 4K, QD1
+BG: sequential write, 1M, QD32
+Use separate fio processes","FG p50/p95/p99 latency, FG IOPS, BG bandwidth, BG completion time, CPU utilisation","1) Foreground latency should improve with boost ON
+2) Background workload should continue making progress
+3) Background throughput reduction should remain within an agreed limit",Feasible,Requires concurrent fio workloads and correct foreground/background cgroup assignment,Yes — checks how SSG prioritises boosted I/O under contention,Whether boost makes interactive foreground operations faster while background I/O is running,UFS under test,P1,Check background starvation as well as foreground improvement
+55,SSG Boost Performance,"1) BASE configuration
+2) SSG scheduler enabled
+3) Boost control accessible
+4) I/O workload running continuously","1) Run continuous foreground random read, 4K, QD1
+2) Toggle boost OFF → ON → OFF while workload is running
+3) Repeat sequence 20 times
+4) Record performance around every transition","1) Start fio and capture timestamped logs
+2) Enable boost
+3) Record time until performance changes
+4) Disable boost
+5) Record time until performance returns towards normal
+6) Repeat 20 times","Random read, 4K, QD1; continuous workload; boost ON/OFF transitions at fixed intervals","Boost transition time, IOPS, bandwidth, p99 latency, transition-related latency spikes, failed transitions","1) Boost should take effect consistently after activation
+2) Performance should return towards normal after deactivation
+3) No unexpected I/O stalls or errors during transitions",Feasible,Requires timestamped logging and reliable boost toggling while fio is active. Define transition-time limits from implementation,Yes — checks scheduler response to boost state changes,Whether boost reacts reliably when an application starts or stops needing priority,UFS under test,P1,Verify actual boost state after each write; a successful shell command alone does not prove scheduler application
+56,SSG Boost Performance,"1) BASE configuration
+2) SSG scheduler enabled
+3) Boost control and required cgroups available
+4) Test applications installed","1) Run background download or large file write
+2) Launch application while background I/O is active
+3) Measure launch time with boost OFF
+4) Repeat with boost ON
+5) Perform 10 cold launches per condition","1) Prepare same application and conditions
+2) Start background I/O
+3) Launch application and record launch time
+4) Repeat with boost enabled and foreground PID assigned to boost cgroup
+5) Compare median and p90 launch times",Background sequential write or download; foreground application launch; 10 cold launches per condition,"Application launch time, median, p90, p99 where available, foreground read latency, background write bandwidth, frame drops","1) Boost ON should improve or maintain application launch time
+2) No additional UI stuttering
+3) Background I/O should continue without indefinite starvation",Conditionally feasible,"Requires Android test application, repeatable launch procedure, PID tracking and reliable boost activation. Launch time is also affected by CPU, memory and cache state",Yes — checks whether boost improves storage responsiveness during a real application launch,Whether boost provides a user-visible benefit rather than only improving synthetic fio numbers,UFS under test,P1,"Control app cache state, background activity and thermal conditions between runs"
+57,SSG Boost Performance,"1) BASE configuration
+2) SSG scheduler enabled
+3) Foreground and background cgroups available
+4) Boost state controllable","1) Run one boosted foreground random read workload
+2) Run two background random read/write workloads simultaneously
+3) Maintain workload for 30 minutes
+4) Compare boost ON and OFF","1) Start both background fio processes
+2) Start foreground fio process
+3) Enable boost for foreground process
+4) Record performance at regular intervals
+5) Repeat with boost OFF
+6) Compare foreground latency, background throughput and variation","FG: random read, 4K, QD1
+BG1/BG2: random read/write, 4K, QD32 each
+Run for 30 minutes","FG p95/p99 latency, BG1/BG2 IOPS, BG bandwidth, throughput share, latency variation, CPU utilisation, I/O stalls","1) Boosted foreground latency should remain controlled
+2) Both background jobs should continue progressing
+3) No prolonged starvation
+4) No unexpected performance degradation over 30 minutes",Feasible,"Requires three concurrent workloads, separate process tracking and stable thermal environment","Yes — evaluates boost priority, fairness and long-duration scheduling behaviour",Whether boost prioritises important I/O without starving other applications or becoming unstable during prolonged use,UFS under test,P2,Check background job shares and starvation; do not assume equal throughput unless workloads and priorities are equivalent
