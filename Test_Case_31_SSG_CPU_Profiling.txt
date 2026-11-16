@@ -1,0 +1,57 @@
+Test Case 31 – SSG CPU Profiling
+
+1. Sl. No.
+31
+
+2. Viewpoint / Priority Group
+P6 Scalability & lock contention
+
+3. Precondition
+1) BASE
+2) perf/simpleperf available
+
+4. Test scenario (from sheet)
+1) Profile 4K random read, QD32, numjobs=4 for 30 seconds.
+2) Compare top symbols: ssg_dispatch_request, ssg_insert_requests, ssg_prepare_request, ssg_limit_depth, RB-tree operations.
+
+5. How to implement on Android UFS
+Run a 4K random-read workload using fio with QD32 and 4 jobs for 30 seconds. Capture CPU profiling data using simpleperf or perf. Compare the CPU time consumed by the listed SSG functions against mq-deadline under the same workload.
+
+6. Suggested command / configuration
+fio --name=ssg_profile --filename=/data/test.bin --rw=randread --bs=4k --iodepth=32 --numjobs=4 --direct=1 --time_based=1 --runtime=30 --group_reporting
+
+Use simpleperf record or kernel profiling to capture the SSG symbols during the workload.
+
+7. What to measure
+1) CPU percentage consumed by each SSG function.
+2) Total SSG scheduler CPU usage.
+3) CPU usage of RB-tree operations.
+4) Compare top CPU-consuming symbols between SSG and mq-deadline.
+
+8. Expected result / acceptance criteria
+1) No single SSG function should consume more than 3% CPU.
+2) Total scheduler CPU should be within +1% of mq-deadline.
+
+9. Feasibility
+High, provided kernel symbols are available and profiling is permitted.
+
+10. Risks / dependencies
+Kernel symbols may be unavailable or inlined. Ensure profiling overhead is considered. Both schedulers must run the same workload at comparable achieved IOPS.
+
+11. Explanation – what this test proves
+Identifies which internal SSG functions consume the most CPU and whether any function creates excessive processing overhead.
+
+12. Feasibility Status
+Feasible – requires perf/simpleperf access and usable kernel symbols.
+
+13. Does this test check the SSG scheduler?
+Yes – directly profiles internal SSG scheduler functions.
+
+14. What this test proves
+Shows whether SSG's internal request-dispatching, request-insertion and depth-limiting operations consume excessive CPU compared with mq-deadline.
+
+In simple terms
+This test opens up the SSG scheduler's CPU profile and checks which internal functions are doing the most work. The objective is to make sure SSG does not waste CPU while managing UFS requests.
+
+Note
+The screenshot identifies Test Case 31 as the profiling test. The CPU-utilisation test at fixed 150K IOPS is Test Case 32.
